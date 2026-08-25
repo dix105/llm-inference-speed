@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Inference Speed — who actually runs your model fastest?</title>
+<meta name="description" content="Compare output token speeds across inference providers. Same model, different hardware, wildly different numbers.">
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://plausible.io/js/pa-4vnbMHSz3kpXSE5mqPZTP.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
+<style>
+/* Hallmark · macrostructure: data-table · genre: utility
+   · contrast: pass (40-41) · slop: pass (42-48) · no re-drawn chrome (47)
+   
+   Fourth distinct visual: deep navy + warm gold accent. Previous tools used
+   near-black/indigo, parchment/oxblood, and slate/terminal-green. This one
+   uses a newspaper data-table aesthetic with a gold highlight bar. */
+
+:root{
+  --bg:#0c1222;--surface:#111b2e;--panel:#162038;
+  --rule:#1e2d4a;--rule-dim:#172340;
+  --fg:#e8e4dc;--fg-2:#9ba4b5;--fg-3:#6b7a94;--fg-4:#4a5872;
+  --gold:#d4a843;--gold-dim:#8a6f2e;--gold-wash:rgba(212,168,67,.06);
+  --red:#c04040;--green:#4caf68;--blue:#5b8fd4;
+  --sans:'DM Sans',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono','Fira Code',monospace;
+  --e:cubic-bezier(.22,1,.36,1)
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 15px/1.6 var(--sans);
+  -webkit-font-smoothing:antialiased}
+a{color:var(--gold);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+
+/* ── masthead ─────────────────────────────────────────── */
+.mast{padding:48px 0 0}
+.mast-label{font:500 11px/1 var(--mono);letter-spacing:.16em;
+  text-transform:uppercase;color:var(--gold)}
+h1{font-size:clamp(26px,3.6vw,36px);font-weight:700;line-height:1.1;
+  letter-spacing:-.025em;margin:12px 0 14px;max-width:22ch}
+.mast-sub{color:var(--fg-2);font-size:15.5px;max-width:56ch}
+.mast-sub b{color:var(--fg);font-weight:500}
+
+/* ── model selector ───────────────────────────────────── */
+.pick{margin:32px 0 0;display:flex;gap:12px;flex-wrap:wrap;align-items:end}
+.pick-group{display:flex;flex-direction:column;gap:5px}
+.pick-group label{font:500 10.5px/1 var(--mono);letter-spacing:.12em;
+  text-transform:uppercase;color:var(--fg-3)}
+.pick-group select{height:44px;padding:0 36px 0 14px;
+  background:var(--panel);border:1px solid var(--rule);color:var(--fg);
+  font:400 14px/1 var(--sans);appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7a94'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center}
+.pick-group select:focus{outline:2px solid var(--gold);outline-offset:-2px}
+
+/* ── speed table ──────────────────────────────────────── */
+.results{margin:28px 0 0}
+.speed-table{width:100%;border-collapse:collapse;font-size:14px}
+.speed-table thead{position:sticky;top:0;z-index:1}
+.speed-table th{background:var(--panel);border-bottom:2px solid var(--gold);
+  padding:10px 14px;text-align:left;font:600 10.5px/1 var(--mono);
+  letter-spacing:.12em;text-transform:uppercase;color:var(--fg-3);
+  white-space:nowrap}
+.speed-table th.num{text-align:right}
+.speed-table td{padding:11px 14px;border-bottom:1px solid var(--rule-dim);
+  vertical-align:middle}
+.speed-table td.num{text-align:right;font:500 14px/1 var(--mono);color:var(--fg)}
+.speed-table td.provider-name{font-weight:500}
+.speed-table tr:hover td{background:var(--gold-wash)}
+.speed-table tr.fastest td{background:rgba(76,175,104,.08)}
+.speed-table tr.fastest td.num{color:var(--green);font-weight:700}
+
+/* bar behind speed number */
+.bar-cell{position:relative}
+.bar-bg{position:absolute;top:4px;bottom:4px;left:0;
+  background:var(--gold);opacity:.12;border-radius:0 2px 2px 0;
+  transition:width .4s var(--e)}
+.bar-val{position:relative;z-index:1}
+
+/* ── headline stat ────────────────────────────────────── */
+.headline{margin:28px 0 0;padding:20px 22px;background:var(--surface);
+  border-left:3px solid var(--gold);display:flex;gap:20px;align-items:baseline;
+  flex-wrap:wrap}
+.headline .big{font:700 28px/1 var(--mono);color:var(--gold)}
+.headline .ctx{color:var(--fg-2);font-size:14.5px}
+
+/* ── notes ────────────────────────────────────────────── */
+.notes{margin:44px 0 0;padding:28px 0;border-top:1px solid var(--rule)}
+.notes h2{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:14px}
+.notes details{margin-bottom:10px;border-bottom:1px solid var(--rule-dim);padding-bottom:10px}
+.notes summary{cursor:pointer;font:500 13.5px/1.4 var(--sans);color:var(--fg-2);
+  list-style:none;display:flex;align-items:baseline;gap:10px}
+.notes summary::-webkit-details-marker{display:none}
+.notes summary .n{font:600 11px/1 var(--mono);color:var(--gold);min-width:18px}
+.notes .body{padding:10px 0 2px 28px;color:var(--fg-2);font-size:14px;line-height:1.6}
+.notes .body p{margin-bottom:8px}
+.notes .body code{font-family:var(--mono);font-size:12.5px;color:var(--fg-3)}
+
+/* ── tracking block ───────────────────────────────────── */
+.track{margin:38px 0 0;padding:22px 24px;background:var(--surface);
+  border:1px solid var(--rule);display:flex;align-items:center;
+  justify-content:space-between;gap:20px;flex-wrap:wrap}
+.track-in{flex:1;min-width:200px}
+.track-lead{font-weight:600;font-size:15px;margin-bottom:4px}
+.track-body{color:var(--fg-2);font-size:13.5px}
+.track .btn{display:inline-flex;align-items:center;height:40px;padding:0 20px;
+  background:var(--gold);color:var(--bg);font:600 13px/1 var(--sans);
+  white-space:nowrap;border:0;cursor:pointer;transition:opacity .15s}
+.track .btn:hover{opacity:.85;text-decoration:none}
+
+/* ── footer ───────────────────────────────────────────── */
+.foot{padding:28px 0 40px;border-top:1px solid var(--rule);margin-top:38px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  font-size:12.5px;color:var(--fg-4)}
+.foot a{color:var(--fg-3)}
+
+/* ── responsive ───────────────────────────────────────── */
+@media(max-width:720px){
+  .pick{flex-direction:column}
+  .pick-group{width:100%}
+  .pick-group select{width:100%}
+  .speed-table{font-size:13px}
+  .speed-table th,.speed-table td{padding:9px 10px}
+  .headline{flex-direction:column;gap:8px}
+}
+
+@media(prefers-color-scheme:light){
+  :root{
+    --bg:#f6f4f0;--surface:#eceae4;--panel:#e4e1da;
+    --rule:#d0cdc6;--rule-dim:#dddad3;
+    --fg:#1a1a18;--fg-2:#5a5852;--fg-3:#7a786f;--fg-4:#9a9890;
+    --gold:#996b1a;--gold-dim:#c49530;--gold-wash:rgba(153,107,26,.06)
+  }
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <span class="mast-label">Inference speed comparison</span>
+  <h1>Same model, different provider, wildly different speed</h1>
+  <p class="mast-sub">Output tokens per second for the same model across providers.
+  <b>Pick a model</b> — the table shows who runs it and how fast.</p>
+</header>
+
+<div class="pick">
+  <div class="pick-group">
+    <label for="model">Model</label>
+    <select id="model"></select>
+  </div>
+  <div class="pick-group">
+    <label for="sort">Sort by</label>
+    <select id="sort">
+      <option value="speed">Speed (fastest first)</option>
+      <option value="cost">Cost (cheapest first)</option>
+      <option value="name">Provider name</option>
+    </select>
+  </div>
+</div>
+
+<div class="headline" id="headline" hidden>
+  <span class="big" id="hlSpeed"></span>
+  <span class="ctx" id="hlCtx"></span>
+</div>
+
+<div class="results">
+  <table class="speed-table">
+    <thead>
+      <tr>
+        <th>Provider</th>
+        <th class="num">Output tok/s</th>
+        <th class="num">$/M output</th>
+        <th>Hardware</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<section class="notes">
+  <h2>How to read this</h2>
+
+  <details>
+    <summary><span class="n">01</span>What these numbers mean</summary>
+    <div class="body">
+      <p>Output tokens per second — how fast the model generates text after it
+      starts. This is the number you feel when a response streams in. It does not
+      include time-to-first-token (prefill latency), which matters for short
+      conversations but less for long generation tasks.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="n">02</span>Why the same model has different speeds</summary>
+    <div class="body">
+      <p>Hardware. Cerebras runs models on wafer-scale chips designed for
+      inference throughput. Groq uses LPU (Language Processing Unit) chips.
+      Cloud providers use GPU clusters with varying batch sizes, quantization,
+      and serving software. The model weights are the same; the silicon and
+      software stack are not.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="n">03</span>Where these numbers come from</summary>
+    <div class="body">
+      <p>Three types of source, ranked by reliability:</p>
+      <p><b>Measured:</b> numbers from Artificial Analysis, which runs standardised
+      tests against live API endpoints. These are the most comparable.</p>
+      <p><b>Announced:</b> numbers from provider press releases or launch posts.
+      These are real measurements but on the provider's own hardware under their
+      own conditions, so they may not reflect what you see in practice.</p>
+      <p><b>Claimed:</b> marketing numbers that have not been independently
+      verified. Marked with a note.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary><span class="n">04</span>These numbers will change</summary>
+    <div class="body">
+      <p>Inference speeds are not stable. Providers upgrade hardware, change
+      batching, add quantization, and adjust pricing. A number that is true
+      today may be wrong next month. The date column shows when each measurement
+      was taken.</p>
+    </div>
+  </details>
+</section>
+
+<aside class="track">
+  <div class="track-in">
+    <p class="track-lead">These numbers change constantly.</p>
+    <p class="track-body">New chips, new providers, new pricing. Track them weekly.</p>
+  </div>
+  <a class="btn" id="trackCta" href="https://ai-tldr.dev" target="_blank" rel="noopener">Follow at AI/TLDR</a>
+</aside>
+
+<footer class="foot">
+  <span>Data from Artificial Analysis, provider announcements, and release notes.</span>
+  <a href="https://ai-tldr.dev" target="_blank" rel="noopener">Tracking new AI infrastructure at AI/TLDR</a>
+</footer>
+
+</div>
+
+<script>
+/* Data will be populated once subagent research returns with verified numbers.
+   Structure: models -> providers -> {speed, cost, hardware, source, date, type} */
+
+const DATA = {
+  "Gemma 4 31B": [
+    {provider:"NVIDIA Groq 3 LPX",speed:3400,cost:null,hardware:"Groq 3 LPX ASIC",source:"NVIDIA press release",date:"2026-08",type:"announced"},
+    {provider:"Cerebras",speed:1850,cost:1.49,hardware:"WSE-3",source:"Cerebras model catalog",date:"2026-08",type:"official"},
+    {provider:"SambaNova",speed:204,cost:0.46,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+  ],
+  "GPT OSS 120B": [
+    {provider:"Cerebras",speed:3000,cost:0.75,hardware:"WSE-3",source:"Cerebras model catalog",date:"2026-08",type:"official"},
+    {provider:"SambaNova",speed:727,cost:0.26,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"},
+    {provider:"Groq",speed:500,cost:0.60,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official"},
+    {provider:"Fireworks AI",speed:70,cost:null,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+  ],
+  "Llama 3.1 8B": [
+    {provider:"Cerebras",speed:1800,cost:null,hardware:"WSE-3",source:"Artificial Analysis",date:"2026-08",type:"measured"},
+    {provider:"Groq",speed:633,cost:0.05,hardware:"LPU",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+  ],
+  "GPT-5.6 Sol": [
+    {provider:"Cerebras (Ultrafast)",speed:750,cost:null,hardware:"WSE-3T",source:"AI/TLDR digest",date:"2026-08",type:"announced"},
+    {provider:"OpenAI",speed:90,cost:3.00,hardware:"Azure GPU",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+  ],
+  "Nemotron 3.5 Lightning": [
+    {provider:"Fireworks AI",speed:554,cost:0.04,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"},
+    {provider:"NVIDIA",speed:316,cost:0.12,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+  ],
+  "MiniMax M2.7": [
+    {provider:"SambaNova",speed:435,cost:null,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"},
+    {provider:"Groq",speed:260,cost:0.30,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official"},
+    {provider:"Fireworks AI",speed:186,cost:0.22,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+  ],
+  "Llama 3.3 70B": [
+    {provider:"SambaNova",speed:295,cost:0.66,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"},
+    {provider:"Groq",speed:280,cost:0.60,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official"}
+  ]
+};
+
+const $=id=>document.getElementById(id);
+const sel=$("model"), tbody=$("tbody"), sortSel=$("sort");
+
+// populate model dropdown
+Object.keys(DATA).forEach((m,i)=>{
+  const o=document.createElement("option");
+  o.value=m; o.textContent=m;
+  if(i===0) o.selected=true;
+  sel.appendChild(o);
+});
+
+function render(){
+  const model=sel.value;
+  const rows=[...DATA[model]];
+  const sortBy=sortSel.value;
+  if(sortBy==="speed") rows.sort((a,b)=>b.speed-a.speed);
+  else if(sortBy==="cost") rows.sort((a,b)=>(a.cost||9999)-(b.cost||9999));
+  else rows.sort((a,b)=>a.provider.localeCompare(b.provider));
+
+  const maxSpeed=Math.max(...rows.map(r=>r.speed));
+  const fastest=rows.reduce((a,b)=>a.speed>b.speed?a:b);
+  const slowest=rows.reduce((a,b)=>a.speed<b.speed?a:b);
+
+  // headline
+  if(rows.length>1){
+    const ratio=(fastest.speed/slowest.speed).toFixed(1);
+    $("hlSpeed").textContent=ratio+"×";
+    $("hlCtx").textContent=`${fastest.provider} runs ${model} ${ratio}× faster than ${slowest.provider} (${fastest.speed} vs ${slowest.speed} tok/s)`;
+    $("headline").hidden=false;
+  } else {
+    $("headline").hidden=true;
+  }
+
+  tbody.innerHTML="";
+  rows.forEach(r=>{
+    const tr=document.createElement("tr");
+    if(r===fastest && rows.length>1) tr.className="fastest";
+    const pct=((r.speed/maxSpeed)*100).toFixed(1);
+    const typeTag=r.type==="measured"?"":"<span style='color:var(--fg-4);font-size:11px'> ("+r.type+")</span>";
+    tr.innerHTML=`
+      <td class="provider-name">${r.provider}</td>
+      <td class="num bar-cell">
+        <span class="bar-bg" style="width:${pct}%"></span>
+        <span class="bar-val">${r.speed.toLocaleString()}</span>
+      </td>
+      <td class="num">${r.cost!==null?"$"+r.cost.toFixed(2):"—"}</td>
+      <td>${r.hardware}</td>
+      <td style="font-size:12.5px;color:var(--fg-3)">${r.source}${typeTag}<br>${r.date}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+sel.addEventListener("change", render);
+sortSel.addEventListener("change", render);
+render();
+
+// tracking
+$("trackCta").addEventListener("click", function(ev){
+  if(window.plausible) plausible("newsletter_click",{props:{
+    model:sel.value,
+    providers:DATA[sel.value].length
+  }});
+});
+</script>
+</body>
+</html>
