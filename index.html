@@ -240,12 +240,12 @@ h1{font-size:clamp(26px,3.6vw,36px);font-weight:700;line-height:1.1;
     <p class="track-lead">These numbers change constantly.</p>
     <p class="track-body">New chips, new providers, new pricing. Track them weekly.</p>
   </div>
-  <a class="btn" id="trackCta" href="https://ai-tldr.dev" target="_blank" rel="noopener">Follow at AI/TLDR</a>
+  <a class="btn" id="trackCta" href="https://blog.toolsnetwork.ai" target="_blank" rel="noopener">Follow at BlogNetwork</a>
 </aside>
 
 <footer class="foot">
   <span>Data from Artificial Analysis, provider announcements, and release notes.</span>
-  <a href="https://ai-tldr.dev" target="_blank" rel="noopener">Tracking new AI infrastructure at AI/TLDR</a>
+  <a href="https://blog.toolsnetwork.ai" target="_blank" rel="noopener">Tracking new AI infrastructure at BlogNetwork</a>
 </footer>
 
 </div>
@@ -256,36 +256,36 @@ h1{font-size:clamp(26px,3.6vw,36px);font-weight:700;line-height:1.1;
 
 const DATA = {
   "Gemma 4 31B": [
-    {provider:"NVIDIA Groq 3 LPX",speed:3400,cost:null,hardware:"Groq 3 LPX ASIC",source:"NVIDIA press release",date:"2026-08",type:"announced"},
-    {provider:"Cerebras",speed:1850,cost:1.49,hardware:"WSE-3",source:"Cerebras model catalog",date:"2026-08",type:"official"},
-    {provider:"SambaNova",speed:204,cost:0.46,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+    {provider:"NVIDIA Groq 3 LPX",speed:3400,cost:null,hardware:"Groq 3 LPX ASIC",source:"NVIDIA press release",date:"2026-08",type:"announced",article:"https://blog.toolsnetwork.ai/releases/nvidia-groq-3-lpx-production/"},
+    {provider:"Cerebras",speed:1850,cost:1.49,hardware:"WSE-3",source:"Cerebras model catalog",date:"2026-08",type:"official",article:null},
+    {provider:"SambaNova",speed:204,cost:0.46,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null}
   ],
   "GPT OSS 120B": [
-    {provider:"Cerebras",speed:3000,cost:0.75,hardware:"WSE-3",source:"Cerebras model catalog",date:"2026-08",type:"official"},
-    {provider:"SambaNova",speed:727,cost:0.26,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"},
-    {provider:"Groq",speed:500,cost:0.60,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official"},
-    {provider:"Fireworks AI",speed:70,cost:null,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+    {provider:"Cerebras",speed:3000,cost:0.75,hardware:"WSE-3",source:"Cerebras model catalog",date:"2026-08",type:"official",article:null},
+    {provider:"SambaNova",speed:727,cost:0.26,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null},
+    {provider:"Groq",speed:500,cost:0.60,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official",article:null},
+    {provider:"Fireworks AI",speed:70,cost:null,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null}
   ],
   "Llama 3.1 8B": [
-    {provider:"Cerebras",speed:1800,cost:null,hardware:"WSE-3",source:"Artificial Analysis",date:"2026-08",type:"measured"},
-    {provider:"Groq",speed:633,cost:0.05,hardware:"LPU",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+    {provider:"Cerebras",speed:1800,cost:null,hardware:"WSE-3",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null},
+    {provider:"Groq",speed:633,cost:0.05,hardware:"LPU",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null}
   ],
   "GPT-5.6 Sol": [
-    {provider:"Cerebras (Ultrafast)",speed:750,cost:null,hardware:"WSE-3T",source:"AI/TLDR digest",date:"2026-08",type:"announced"},
-    {provider:"OpenAI",speed:90,cost:3.00,hardware:"Azure GPU",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+    {provider:"Cerebras (Ultrafast)",speed:750,cost:null,hardware:"WSE-3T",source:"BlogNetwork digest",date:"2026-08",type:"announced",article:null},
+    {provider:"OpenAI",speed:90,cost:3.00,hardware:"Azure GPU",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null}
   ],
   "Nemotron 3.5 Lightning": [
-    {provider:"Fireworks AI",speed:554,cost:0.04,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"},
-    {provider:"NVIDIA",speed:316,cost:0.12,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+    {provider:"Fireworks AI",speed:554,cost:0.04,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null},
+    {provider:"NVIDIA",speed:316,cost:0.12,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null}
   ],
   "MiniMax M2.7": [
-    {provider:"SambaNova",speed:435,cost:null,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"},
-    {provider:"Groq",speed:260,cost:0.30,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official"},
-    {provider:"Fireworks AI",speed:186,cost:0.22,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured"}
+    {provider:"SambaNova",speed:435,cost:null,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null},
+    {provider:"Groq",speed:260,cost:0.30,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official",article:null},
+    {provider:"Fireworks AI",speed:186,cost:0.22,hardware:"GPU cluster",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null}
   ],
   "Llama 3.3 70B": [
-    {provider:"SambaNova",speed:295,cost:0.66,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured"},
-    {provider:"Groq",speed:280,cost:0.60,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official"}
+    {provider:"SambaNova",speed:295,cost:0.66,hardware:"SN40L",source:"Artificial Analysis",date:"2026-08",type:"measured",article:null},
+    {provider:"Groq",speed:280,cost:0.60,hardware:"LPU",source:"Groq model catalog",date:"2026-08",type:"official",article:null}
   ]
 };
 
@@ -328,6 +328,9 @@ function render(){
     if(r===fastest && rows.length>1) tr.className="fastest";
     const pct=((r.speed/maxSpeed)*100).toFixed(1);
     const typeTag=r.type==="measured"?"":"<span style='color:var(--fg-4);font-size:11px'> ("+r.type+")</span>";
+    const srcText=r.article
+      ? `<a href="${r.article}" target="_blank" rel="noopener" style="color:var(--gold)">${r.source}</a>`
+      : r.source;
     tr.innerHTML=`
       <td class="provider-name">${r.provider}</td>
       <td class="num bar-cell">
@@ -336,7 +339,7 @@ function render(){
       </td>
       <td class="num">${r.cost!==null?"$"+r.cost.toFixed(2):"—"}</td>
       <td>${r.hardware}</td>
-      <td style="font-size:12.5px;color:var(--fg-3)">${r.source}${typeTag}<br>${r.date}</td>`;
+      <td style="font-size:12.5px;color:var(--fg-3)">${srcText}${typeTag}<br>${r.date}</td>`;
     tbody.appendChild(tr);
   });
 }
